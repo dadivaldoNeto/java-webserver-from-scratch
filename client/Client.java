@@ -14,17 +14,20 @@ public class Client {
 		return userInput;
 	}
 
+	private static void send_message(OutputStream out, String input) {
+		try {
+			out.write(input.getBytes());
+			System.out.println("Data was sent");
+		}catch(IOException | ArrayIndexOutOfBoundsException e) {}
+	}
+
 	public static void main(String[] args) {
 
 		try {
 			String hostname = null;
 			Socket socket = new Socket(hostname, 8080);
 			OutputStream sendData = socket.getOutputStream();
-			sendData.write(args[0].getBytes());
-			System.out.println("Data was sent");
-		
-			//sendData.write(getInput().getBytes());
-		
+			send_message(sendData, getInput());
 			socket.close();
 		}
 		catch(IOException | ArrayIndexOutOfBoundsException e) {
