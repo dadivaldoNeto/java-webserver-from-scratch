@@ -1,7 +1,6 @@
-package server;
 
 import java.io.IOException;
-import server.core.Server;
+import core.Server;
 
 
 public class Main {

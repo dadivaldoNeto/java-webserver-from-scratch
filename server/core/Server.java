@@ -1,4 +1,4 @@
-package server.core;
+package core;
 
 import java.nio.charset.StandardCharsets;
 import java.io.IOException;
@@ -9,21 +9,23 @@ import java.text.MessageFormat;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.FileChannel;
 import java.util.Set;
 
 public class Server {
 	private final ServerSocketChannel socketImpl;
 	private final Selector selector;
-	private static final int MAX_BUFFER = 2048;
+	private static final int MAX_BUFFER = 4096;
 //	private ByteBuffer buffer;
 
-	private String httpResponse = """
-        HTTP/1.1 200 OK\r
-        Content-Type: text/plain; charset=utf-8\r
-        Content-Length: 13\r
-        Connection: keep-alive\r
-        \r
-        <p1>Hello, World!</p1>""";
+	private String httpResponse =
+	"""
+	HTTP/1.1 200 OK\r
+	Accept-Ranges: bytes
+	Content-Length: 5305
+	Content-Type: text/html
+	\r
+	""";
 
 	public Server(int port) throws IOException {
 		socketImpl = ServerSocketChannel.open();
@@ -40,6 +42,10 @@ public class Server {
 	 * Read all datas from client socket
 	 * 
 	 ***/
+
+	private SendPage() {
+		var f = FileChannel.open("form")
+	}
 	private void read(SocketChannel sock) throws IOException {
 		ByteBuffer buffer = ByteBuffer.allocate(MAX_BUFFER);
 		System.out.println("Client sent: \n");
@@ -79,23 +85,20 @@ public class Server {
 
 	public void run() {
 		try {
-			
 			while (true) {
 				System.out.println("[Waiting for a request...]");
-				if (selector.select(10000L) == 0)
+				if (selector.select(20000L) == 0)
 					continue;
 				Set<SelectionKey> keys = selector.selectedKeys();
 				for (var key : keys) {
 					try {
-						if (key.isAcceptable() ) {
+						if (key.isAcceptable()) {
 							if (key.channel() instanceof ServerSocketChannel ch)
 								accept(ch);
 						}
 						if (key.isReadable()) {
 							if (key.channel() instanceof SocketChannel sock)
 								read(sock);
-							else
-								System.out.println("Can read input! kkk"); 
 						}
 					}catch (IOException e) {
 						key.channel().close();
@@ -104,7 +107,6 @@ public class Server {
 				}
 				selector.selectedKeys().clear();
 			}
-
 		} catch (IOException e) {
 			System.err.println("Error: ".concat(e.getMessage()));
 		}
