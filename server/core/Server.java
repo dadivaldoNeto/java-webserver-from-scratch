@@ -1,7 +1,11 @@
 package core;
 
 import java.nio.charset.StandardCharsets;
+import java.io.EOFException;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -18,7 +22,9 @@ public class Server {
 	private static final int MAX_BUFFER = 4096;
 //	private ByteBuffer buffer;
 
-	private String httpResponse =
+	private  StringBuilder httpResponse;
+
+	private final String Headers =
 	"""
 	HTTP/1.1 200 OK\r
 	Accept-Ranges: bytes
@@ -28,6 +34,7 @@ public class Server {
 	""";
 
 	public Server(int port) throws IOException {
+		httpResponse = new StringBuilder(" ");
 		socketImpl = ServerSocketChannel.open();
 		selector = Selector.open();
 
@@ -41,15 +48,25 @@ public class Server {
 	 * 
 	 * Read all datas from client socket
 	 * 
+	 * Must be refactor
 	 ***/
-
-	private SendPage() {
-		var f = FileChannel.open("form")
+	private void process_page() {
+		try (RandomAccessFile file = new RandomAccessFile("form.html", "r")) {
+			
+			while (true) {
+				String line = file.readLine();
+				if (line == null)
+					break ;
+				httpResponse.append(line);
+			}			
+		}catch(IOException e) {
+			System.err.println("Error: " + e.getMessage());
+		}
 	}
+
 	private void read(SocketChannel sock) throws IOException {
 		ByteBuffer buffer = ByteBuffer.allocate(MAX_BUFFER);
 		System.out.println("Client sent: \n");
-
 		while (true) {
 			int read_bytes = sock.read(buffer);
 			if (read_bytes <= 0) {
@@ -67,9 +84,17 @@ public class Server {
 			buffer.clear();
 		}
 		buffer.clear();
-		buffer.put(httpResponse.getBytes(StandardCharsets.UTF_8));
-		buffer.flip();
-		sock.write(buffer);
+		var i = 0;
+		while (true) {
+			if (httpResponse.length() <= i)
+				break ;
+			var aux = httpResponse.substring(i, i + (1746 - 1));
+			buffer.put(aux.getBytes(StandardCharsets.UTF_8));
+			buffer.flip();
+			sock.write(buffer);
+			i += 1746;
+			buffer.clear();
+		}
 	}
 
 	/***
@@ -85,6 +110,8 @@ public class Server {
 
 	public void run() {
 		try {
+			process_page();
+			System.out.println(httpResponse.length());
 			while (true) {
 				System.out.println("[Waiting for a request...]");
 				if (selector.select(20000L) == 0)
