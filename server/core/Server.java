@@ -1,9 +1,6 @@
 package core;
 
 import java.nio.charset.StandardCharsets;
-import java.io.EOFException;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
@@ -13,23 +10,22 @@ import java.text.MessageFormat;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.FileChannel;
 import java.util.Set;
 
 public class Server {
 	private final ServerSocketChannel socketImpl;
 	private final Selector selector;
-	private static final int MAX_BUFFER = 4096;
-//	private ByteBuffer buffer;
+	private static final int MAX_BUFFER = 6144;
 
 	private  StringBuilder httpResponse;
 
 	private final String Headers =
 	"""
-	HTTP/1.1 200 OK\r
-	Accept-Ranges: bytes
-	Content-Length: 5305
-	Content-Type: text/html
+	HTTP/1.1 404 Time\r
+	Server: Dadneto\r
+	Content-Type: text/html; charset=UTF-8\r
+	Content-Length: 5406\r
+	Connection: close\r
 	\r
 	""";
 
@@ -51,13 +47,13 @@ public class Server {
 	 * Must be refactor
 	 ***/
 	private void process_page() {
-		try (RandomAccessFile file = new RandomAccessFile("form.html", "r")) {
-			
+		try (RandomAccessFile file = new RandomAccessFile("resource/form.html", "r")) {
+			httpResponse.append(Headers);
 			while (true) {
 				String line = file.readLine();
 				if (line == null)
 					break ;
-				httpResponse.append(line);
+				httpResponse.append(line).append("\r\n");
 			}			
 		}catch(IOException e) {
 			System.err.println("Error: " + e.getMessage());
@@ -83,8 +79,14 @@ public class Server {
 			System.out.println();
 			buffer.clear();
 		}
+		System.out.print(httpResponse.toString());
 		buffer.clear();
-		var i = 0;
+		buffer.put(httpResponse.toString().getBytes(StandardCharsets.UTF_8));
+		buffer.flip();
+		sock.write(buffer);
+		buffer.clear();
+		sock.close();
+/*
 		while (true) {
 			if (httpResponse.length() <= i)
 				break ;
@@ -94,7 +96,7 @@ public class Server {
 			sock.write(buffer);
 			i += 1746;
 			buffer.clear();
-		}
+		} */
 	}
 
 	/***

@@ -6,11 +6,11 @@ import core.Server;
 public class Main {
 	public static void main(String[] args) {
 		try {
-			Server server = new Server(8080);
+			Server server = new Server(9090);
 			server.run();
 		}
 		catch(IOException e) {
-			System.out.println("Internal server error");
+			System.err.println("Internal server error: " + e.getMessage());
 		}
 	}
 }
